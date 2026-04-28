@@ -2,15 +2,7 @@
   "version": 2,
   "functions": {
     "api/webhook.js": {
-      "maxDuration": 30
+      "maxDuration": 60
     }
-  },
-  "headers": [
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" }
-      ]
-    }
-  ]
+  }
 }
