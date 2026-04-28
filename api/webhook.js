@@ -30,9 +30,9 @@ export default async function handler(req, res) {
         await send(from, 'Stuur ook even een tekstbeschrijving van wat je wilt controleren.', DIALOG_KEY);
         return res.status(200).end();
       }
-      const mediaResp = await fetch(`https://waba-v2.360dialog.io/media/${mediaId}`, {
-        headers: { 'D360-API-Key': DIALOG_KEY }
-      });
+     const mediaResp = await fetch(`https://waba-v2.360dialog.io/v1/media/${mediaId}`, {
+  headers: { 'D360-API-Key': DIALOG_KEY }
+});
       console.log('Media response status:', mediaResp.status);
       if (!mediaResp.ok) {
         await send(from, 'Kon je bestand niet verwerken. Probeer opnieuw of stuur je vraag als tekst.', DIALOG_KEY);
