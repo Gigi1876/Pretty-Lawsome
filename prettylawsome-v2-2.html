@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pretty Lawsome — Juridische hulp via WhatsApp</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;0,9..144,900;1,9..144,400;1,9..144,700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --orange:     #F4600C;
+      --orange-lt:  #FF7A2B;
+      --orange-dim: #C94D08;
+      --peach:      #FDEEE4;
+      --cream:      #FDF8F3;
+      --warm-gray:  #F0EAE2;
+      --ink:        #1A1208;
+      --ink-soft:   #4A3728;
+      --white:      #FFFFFF;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--ink);
+      overflow-x: hidden;
+    }
+
+    /* ─────────────────────────────────────────
+       NAV
+    ───────────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 48px;
+      background: rgba(253,248,243,0.88);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(244,96,12,0.10);
+    }
+    .nav-logo {
+      font-family: 'Fraunces', serif;
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--ink);
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--orange); }
+    .nav-links { display: flex; align-items: center; gap: 36px; list-style: none; }
+    .nav-links a {
+      text-decoration: none;
+      color: var(--ink-soft);
+      font-size: 15px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--orange); }
+    .nav-cta {
+      background: var(--orange) !important;
+      color: white !important;
+      padding: 10px 24px;
+      border-radius: 100px;
+      font-weight: 600 !important;
+    }
+    .nav-cta:hover { background: var(--orange-dim) !important; }
+
+    /* ─────────────────────────────────────────
+       ANIMATION HERO — 16:9, full-width, scales
+    ───────────────────────────────────────── */
+    #anim-wrapper {
+      width: 100%;
+      padding-top: 56px; /* nav height offset */
+      position: relative;
+      background: var(--cream);
+    }
+
+    /* The 16:9 aspect-ratio container */
+    #anim-stage-outer {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      position: relative;
+      overflow: hidden;
+      background: var(--cream);
+    }
+
+    /* Inner canvas fixed at 1920×1080, scaled to fit */
+    #anim-stage {
+      position: absolute;
+      top: 0; left: 0;
+      width: 1920px;
+      height: 1080px;
+      transform-origin: top left;
+      /* JS sets the scale */
+    }
+
+    /* ── Blobs ── */
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0;
+      pointer-events: none;
+    }
+    .blob-a { width: 800px; height: 800px; background: var(--peach);   top: -200px; right: -100px; }
+    .blob-b { width: 600px; height: 600px; background: rgba(244,96,12,0.08); bottom: -100px; left: -80px; }
+
+    /* ── Noise ── */
+    .noise {
+      position: absolute; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 50;
+    }
+
+    /* ── Scenes ── */
+    .scene {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      z-index: 10;
+    }
+
+    /* ── SCENE 1: INTRO ── */
+    .intro-eyebrow {
+      font-size: 24px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--orange);
+      font-weight: 700;
+      opacity: 0;
+      transform: translateY(20px);
+      margin-bottom: 20px;
+    }
+    .intro-headline {
+      font-family: 'Fraunces', serif;
+      font-size: 130px;
+      font-weight: 900;
+      color: var(--ink);
+      line-height: 1.0;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    .intro-headline em { font-style: italic; color: var(--orange); }
+    .intro-sub {
+      font-size: 32px;
+      color: var(--ink-soft);
+      margin-top: 32px;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(20px);
+      line-height: 1.5;
+    }
+
+    /* ── STEP CARDS (scenes 2-4) ── */
+    .step-bg-num {
+      position: absolute;
+      font-family: 'Fraunces', serif;
+      font-size: 400px;
+      font-weight: 900;
+      color: var(--warm-gray);
+      line-height: 1;
+      user-select: none;
+      opacity: 0;
+      z-index: 0;
+    }
+
+    .step-card {
+      background: var(--white);
+      border-radius: 48px;
+      padding: 72px 96px;
+      width: 1400px;
+      box-shadow: 0 40px 120px rgba(244,96,12,0.10);
+      position: relative;
+      z-index: 2;
+      opacity: 0;
+      transform: translateY(60px);
+    }
+    .step-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--peach);
+      color: var(--orange-dim);
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 10px 24px;
+      border-radius: 100px;
+      margin-bottom: 32px;
+    }
+    .step-tag .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--orange); }
+    .step-title {
+      font-family: 'Fraunces', serif;
+      font-size: 88px;
+      font-weight: 900;
+      color: var(--ink);
+      line-height: 1.05;
+      margin-bottom: 24px;
+    }
+    .step-title em { font-style: italic; color: var(--orange); }
+    .step-body { font-size: 32px; color: var(--ink-soft); line-height: 1.5; }
+
+    /* ── Chat bubbles (step 1) ── */
+    .chat-wrap { display: flex; flex-direction: column; gap: 16px; margin-top: 40px; }
+    .bubble {
+      display: inline-flex; align-items: center; gap: 14px;
+      padding: 18px 28px;
+      border-radius: 24px;
+      font-size: 26px;
+      font-weight: 500;
+      max-width: 700px;
+      opacity: 0;
+    }
+    .bubble.user  { background: var(--ink); color: white; align-self: flex-end; border-bottom-right-radius: 6px; transform: translateX(30px); }
+    .bubble.bot   { background: var(--peach); color: var(--ink); border-bottom-left-radius: 6px; transform: translateX(-30px); }
+
+    /* ── Scan visual (step 2) ── */
+    .scan-visual {
+      width: 100%; height: 220px;
+      background: var(--cream);
+      border-radius: 24px;
+      margin-top: 40px;
+      position: relative;
+      overflow: hidden;
+    }
+    .scan-line {
+      position: absolute; left: 0; right: 0; height: 4px;
+      background: linear-gradient(90deg, transparent, var(--orange), transparent);
+      top: 0;
+      box-shadow: 0 0 24px var(--peach);
+    }
+    .scan-rows { padding: 32px 40px; display: flex; flex-direction: column; gap: 18px; }
+    .fake-line { height: 18px; border-radius: 9px; background: var(--warm-gray); }
+    .fake-line.hi { background: var(--peach); position: relative; }
+    .risk-badge {
+      position: absolute; right: 0; top: 50%;
+      transform: translateY(-50%);
+      background: var(--peach); color: var(--orange-dim);
+      font-size: 18px; font-weight: 700;
+      padding: 4px 18px; border-radius: 100px;
+      opacity: 0;
+    }
+
+    /* ── Pills (step 3) ── */
+    .pills { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 40px; }
+    .pill {
+      padding: 18px 32px; border-radius: 20px;
+      font-size: 26px; font-weight: 600;
+      display: flex; align-items: center; gap: 12px;
+      opacity: 0; transform: translateY(20px);
+    }
+    .pill.red    { background: #FFE8E8; color: #C0392B; }
+    .pill.yellow { background: #FFF8E1; color: #B8860B; }
+    .pill.green  { background: var(--peach); color: var(--orange-dim); }
+
+    /* ── OUTRO ── */
+    #s5 { background: var(--cream); flex-direction: column; padding: 80px 100px; }
+
+    .outro-eyebrow {
+      font-size: 20px; font-weight: 700;
+      letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--orange); margin-bottom: 48px;
+      opacity: 0; transform: translateY(16px);
+    }
+
+    /* 3 step cards side by side */
+    .outro-steps {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 32px;
+      width: 100%;
+    }
+    .outro-step {
+      background: var(--white);
+      border: 2px solid var(--warm-gray);
+      border-radius: 36px;
+      padding: 52px 48px;
+      opacity: 0;
+      transform: translateY(50px);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 12px 48px rgba(26,18,8,0.06);
+    }
+    .outro-step-num {
+      font-family: 'Fraunces', serif;
+      font-size: 140px; font-weight: 900;
+      color: var(--warm-gray);
+      position: absolute;
+      bottom: -24px; right: 16px;
+      line-height: 1;
+      user-select: none;
+    }
+    .outro-step-icon { font-size: 52px; margin-bottom: 20px; display: block; }
+    .outro-step-tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--peach); color: var(--orange-dim);
+      font-size: 16px; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      padding: 7px 18px; border-radius: 100px;
+      margin-bottom: 20px;
+    }
+    .outro-step-title {
+      font-family: 'Fraunces', serif;
+      font-size: 44px; font-weight: 900;
+      color: var(--ink); line-height: 1.1;
+      margin-bottom: 14px;
+    }
+    .outro-step-title em { font-style: italic; color: var(--orange); }
+    .outro-step-body { font-size: 22px; color: var(--ink-soft); line-height: 1.5; }
+
+    /* Bottom CTA row */
+    .outro-cta-row {
+      display: flex; align-items: center; justify-content: center;
+      gap: 32px; margin-top: 52px; width: 100%;
+      opacity: 0; transform: translateY(16px);
+    }
+    .outro-cta-pill {
+      background: var(--orange); color: white;
+      font-size: 28px; font-weight: 700;
+      padding: 20px 56px; border-radius: 100px;
+      box-shadow: 0 12px 40px rgba(244,96,12,0.28);
+    }
+    .outro-price {
+      font-family: 'Fraunces', serif;
+      font-size: 30px; font-weight: 900;
+      color: var(--ink-soft);
+    }
+    .outro-price strong { color: var(--ink); }
+
+    /* ── Replay button ── */
+    #replay-btn {
+      position: absolute;
+      bottom: 32px; right: 40px;
+      z-index: 60;
+      background: rgba(26,18,8,0.12);
+      border: none;
+      color: var(--ink);
+      font-size: 18px;
+      font-weight: 600;
+      padding: 12px 24px;
+      border-radius: 100px;
+      cursor: pointer;
+      display: none;
+      font-family: 'DM Sans', sans-serif;
+      transition: background 0.2s;
+    }
+    #replay-btn:hover { background: rgba(26,18,8,0.22); }
+
+    /* ─────────────────────────────────────────
+       REST OF SITE
+    ───────────────────────────────────────── */
+    .stats-bar {
+      background: var(--orange);
+      padding: 28px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 80px;
+      flex-wrap: wrap;
+    }
+    .stat-item { text-align: center; color: white; }
+    .stat-num  { font-family: 'Fraunces', serif; font-size: 36px; font-weight: 900; display: block; }
+    .stat-label { font-size: 13px; opacity: 0.8; margin-top: 2px; }
+
+    section { padding: 100px 48px; }
+    .section-inner { max-width: 1100px; margin: 0 auto; }
+    .section-eyebrow { font-size: 13px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--orange); margin-bottom: 16px; }
+    .section-title { font-family: 'Fraunces', serif; font-size: clamp(36px, 4vw, 56px); font-weight: 900; line-height: 1.1; color: var(--ink); margin-bottom: 20px; }
+    .section-title em { font-style: italic; color: var(--orange); }
+    .section-sub { font-size: 19px; color: var(--ink-soft); line-height: 1.6; max-width: 560px; }
+
+    /* Steps */
+    #how { background: var(--white); }
+    .steps-grid {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 0;
+      margin-top: 64px; position: relative;
+    }
+    .steps-grid::before {
+      content: ''; position: absolute;
+      top: 36px; left: 10%; right: 10%;
+      height: 2px;
+      background: linear-gradient(90deg, var(--orange) 0%, rgba(244,96,12,0.15) 100%);
+    }
+    .step-item { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0 16px; }
+    .step-dot {
+      width: 72px; height: 72px; background: var(--white);
+      border: 3px solid var(--orange); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Fraunces', serif; font-size: 26px; font-weight: 900;
+      color: var(--orange); margin-bottom: 24px; position: relative; z-index: 1;
+    }
+    .step-item-title { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 700; color: var(--ink); margin-bottom: 10px; }
+    .step-item-body  { font-size: 14px; color: var(--ink-soft); line-height: 1.6; }
+
+    /* Pricing */
+    #pricing { background: var(--cream); }
+    .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; margin-top: 64px; }
+    .price-card {
+      background: var(--white); border-radius: 24px; padding: 40px 36px;
+      border: 2px solid transparent;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+      position: relative;
+    }
+    .price-card:hover { border-color: var(--orange); box-shadow: 0 24px 64px rgba(244,96,12,0.12); transform: translateY(-4px); }
+    .price-card.featured { background: var(--orange); color: white; border-color: var(--orange); box-shadow: 0 24px 64px rgba(244,96,12,0.30); }
+    .price-card.featured:hover { transform: translateY(-6px); }
+    .price-badge { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); background: var(--ink); color: white; font-size: 12px; font-weight: 700; padding: 5px 16px; border-radius: 100px; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
+    .price-name { font-size: 14px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px; opacity: 0.7; }
+    .price-amount { font-family: 'Fraunces', serif; font-size: 56px; font-weight: 900; line-height: 1; margin-bottom: 8px; }
+    .price-period { font-size: 14px; opacity: 0.6; margin-bottom: 28px; }
+    .price-divider { height: 1px; background: rgba(26,18,8,0.08); margin-bottom: 24px; }
+    .price-card.featured .price-divider { background: rgba(255,255,255,0.2); }
+    .price-features { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
+    .price-features li { font-size: 15px; display: flex; gap: 10px; align-items: flex-start; }
+    .price-cta { display: block; text-align: center; text-decoration: none; padding: 14px; border-radius: 100px; font-size: 16px; font-weight: 600; transition: background 0.2s; }
+    .price-card:not(.featured) .price-cta { background: var(--peach); color: var(--orange-dim); }
+    .price-card:not(.featured) .price-cta:hover { background: var(--orange); color: white; }
+    .price-card.featured .price-cta { background: white; color: var(--orange-dim); }
+
+    /* Testimonials */
+    #testimonials { background: var(--white); }
+    .testimonials-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; margin-top: 64px; }
+    .testi-card { background: var(--cream); border-radius: 20px; padding: 36px; }
+    .testi-quote { font-size: 15px; line-height: 1.7; color: var(--ink-soft); margin-bottom: 24px; font-style: italic; }
+    .testi-author { display: flex; align-items: center; gap: 14px; }
+    .testi-avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--peach); display: flex; align-items: center; justify-content: center; font-size: 22px; }
+    .testi-name { font-weight: 700; font-size: 15px; color: var(--ink); }
+    .testi-meta { font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
+    .testi-tag { margin-top: 4px; display: inline-block; font-size: 11px; font-weight: 600; background: var(--peach); color: var(--orange-dim); padding: 3px 10px; border-radius: 100px; }
+
+    /* CTA + Careers */
+    #cta-banner { background: var(--ink); padding: 100px 48px; text-align: center; }
+    .cta-headline { font-family: 'Fraunces', serif; font-size: clamp(36px, 4vw, 60px); font-weight: 900; color: white; line-height: 1.1; margin-bottom: 20px; }
+    .cta-headline em { font-style: italic; color: var(--orange-lt); }
+    .cta-sub { font-size: 19px; color: rgba(255,255,255,0.6); margin-bottom: 44px; line-height: 1.6; }
+    .btn-primary { display: inline-flex; align-items: center; gap: 10px; background: var(--orange); color: white; font-size: 17px; font-weight: 600; padding: 16px 32px; border-radius: 100px; text-decoration: none; transition: background 0.2s, transform 0.15s; box-shadow: 0 8px 32px rgba(244,96,12,0.28); }
+    .btn-primary:hover { background: var(--orange-dim); transform: translateY(-2px); }
+
+    #careers { background: var(--cream); }
+    .careers-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+    .careers-card { background: white; border-radius: 24px; padding: 48px; box-shadow: 0 16px 48px rgba(26,18,8,0.06); }
+    .careers-card p { font-size: 17px; color: var(--ink-soft); line-height: 1.7; margin-bottom: 28px; }
+    .careers-card a { color: var(--orange); text-decoration: none; font-weight: 600; }
+
+    footer { background: var(--ink); padding: 36px 48px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+    .footer-logo { font-family: 'Fraunces', serif; font-weight: 900; font-size: 20px; color: white; }
+    .footer-logo span { color: var(--orange-lt); }
+    .footer-copy { font-size: 13px; color: rgba(255,255,255,0.4); }
+
+    /* Scroll reveal */
+    .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.7s ease, transform 0.7s ease; }
+    .reveal.visible { opacity: 1; transform: none; }
+
+/* ════════════════════════════════════════
+   PARALLAX
+════════════════════════════════════════ */
+.parallax-slow  { will-change: transform; }
+.parallax-fast  { will-change: transform; }
+.parallax-blob  { will-change: transform; pointer-events: none; }
+      nav { padding: 14px 20px; }
+      .nav-links { display: none; }
+      section { padding: 64px 20px; }
+      .steps-grid { grid-template-columns: 1fr 1fr; }
+      .steps-grid::before { display: none; }
+      .pricing-grid, .testimonials-grid, .careers-inner { grid-template-columns: 1fr; }
+      .stats-bar { gap: 32px; padding: 24px 20px; }
+      footer { flex-direction: column; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="nav-logo">Pretty <span>Lawsome</span></a>
+  <ul class="nav-links">
+    <li><a href="#how">Hoe het werkt</a></li>
+    <li><a href="#pricing">Prijzen</a></li>
+    <li><a href="#careers">Voor professionals</a></li>
+    <li><a href="https://wa.me/31615712309" class="nav-cta">💬 WhatsApp ons</a></li>
+  </ul>
+</nav>
+
+<!-- ═══════════════════════════════════════════
+     ANIMATED HERO — 16:9, scales to viewport
+════════════════════════════════════════════ -->
+<div id="anim-wrapper">
+  <div id="anim-stage-outer">
+    <div id="anim-stage">
+
+      <!-- Blobs -->
+      <div class="blob blob-a" id="blob-a"></div>
+      <div class="blob blob-b" id="blob-b"></div>
+      <div class="noise"></div>
+
+      <!-- ── SCENE 1: Intro (0–3s) ── -->
+      <div class="scene" id="s1">
+        <div class="intro-eyebrow" id="s1-eye">Pretty Lawsome</div>
+        <div class="intro-headline" id="s1-h">Juridische hulp,<br>gewoon via <em>WhatsApp.</em></div>
+        <div class="intro-sub" id="s1-sub">Geen advocaat. Geen afspraak. Gewoon chatten.</div>
+      </div>
+
+      <!-- ── SCENE 2: Stap 1 – Stuur (3–6s) ── -->
+      <div class="scene" id="s2">
+        <div class="step-bg-num" id="s2-num" style="bottom:-80px;left:60px;">1</div>
+        <div class="step-card" id="s2-card">
+          <div class="step-tag"><span class="dot"></span>Stap 1</div>
+          <div class="step-title">Stuur je <em>vraag</em> op.</div>
+          <div class="step-body">Contract, foto, of gewoon een berichtje. Voice message mag ook.</div>
+          <div class="chat-wrap">
+            <div class="bubble bot" id="b1">👋 Stuur je contract of stel je vraag!</div>
+            <div class="bubble user" id="b2">📎 huurcontract.pdf</div>
+            <div class="bubble bot" id="b3">✅ Ontvangen! Ik ga hem scannen…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SCENE 3: Stap 2 – AI scant (6–9s) ── -->
+      <div class="scene" id="s3">
+        <div class="step-bg-num" id="s3-num" style="bottom:-80px;right:60px;">2</div>
+        <div class="step-card" id="s3-card">
+          <div class="step-tag"><span class="dot"></span>Stap 2</div>
+          <div class="step-title">AI scant elke <em>clausule.</em></div>
+          <div class="step-body">Onze AI leest het contract van A tot Z en markeert wat je moet weten.</div>
+          <div class="scan-visual">
+            <div class="scan-line" id="scan-line"></div>
+            <div class="scan-rows">
+              <div class="fake-line" style="width:88%"></div>
+              <div class="fake-line" style="width:72%"></div>
+              <div class="fake-line hi" style="width:90%"><div class="risk-badge" id="risk1">⚠️ Let op</div></div>
+              <div class="fake-line" style="width:60%"></div>
+              <div class="fake-line hi" style="width:76%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SCENE 4: Stap 3 – Advies (9–12s) ── -->
+      <div class="scene" id="s4">
+        <div class="step-bg-num" id="s4-num" style="bottom:-80px;left:60px;">3</div>
+        <div class="step-card" id="s4-card">
+          <div class="step-tag"><span class="dot"></span>Stap 3</div>
+          <div class="step-title">Jij krijgt <em>helder advies.</em></div>
+          <div class="step-body">In begrijpelijke taal, direct in WhatsApp. Weet precies wat je tekent.</div>
+          <div class="pills">
+            <div class="pill red"    id="p1">🚨 Risico gevonden</div>
+            <div class="pill yellow" id="p2">⚠️ Check dit eerst</div>
+            <div class="pill green"  id="p3">✅ Ziet er goed uit</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SCENE 5: Outro — 3-step overview (12–18s) ── -->
+      <div class="scene" id="s5">
+
+        <div class="outro-eyebrow" id="out-eyebrow">Zo werkt het</div>
+
+        <div class="outro-steps">
+          <div class="outro-step" id="os1">
+            <div class="outro-step-num">1</div>
+            <span class="outro-step-icon">📱</span>
+            <div class="outro-step-tag">Stap 1</div>
+            <div class="outro-step-title">Stuur je<br><em>vraag op.</em></div>
+            <div class="outro-step-body">Contract, foto of bericht — gewoon via WhatsApp.</div>
+          </div>
+          <div class="outro-step" id="os2">
+            <div class="outro-step-num">2</div>
+            <span class="outro-step-icon">🔍</span>
+            <div class="outro-step-tag">Stap 2</div>
+            <div class="outro-step-title">AI scant<br><em>alles.</em></div>
+            <div class="outro-step-body">Directe analyse van risico's en aandachtspunten.</div>
+          </div>
+          <div class="outro-step" id="os3">
+            <div class="outro-step-num">3</div>
+            <span class="outro-step-icon">✅</span>
+            <div class="outro-step-tag">Stap 3</div>
+            <div class="outro-step-title">Jij krijgt<br><em>advies.</em></div>
+            <div class="outro-step-body">Helder, begrijpelijk, terug in WhatsApp.</div>
+          </div>
+        </div>
+
+        <div class="outro-cta-row" id="out-cta">
+          <div class="outro-cta-pill">💬 Start gratis via WhatsApp</div>
+          <div class="outro-price">Vanaf <strong>€25</strong></div>
+        </div>
+
+      </div>
+
+      <!-- Replay -->
+      <button id="replay-btn">↺ Opnieuw afspelen</button>
+
+    </div><!-- /anim-stage -->
+  </div><!-- /anim-stage-outer -->
+</div><!-- /anim-wrapper -->
+
+<!-- STATS BAR -->
+<div class="stats-bar" style="position:relative;overflow:hidden;">
+  <div style="position:absolute;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,0.07);top:-100px;left:-60px;" class="parallax-fast"></div>
+  <div class="stat-item reveal"><span class="stat-num">€25</span><div class="stat-label">Vanaf — geen verrassingen</div></div>
+  <div class="stat-item reveal" style="transition-delay:.1s"><span class="stat-num">2u</span><div class="stat-label">Gemiddelde reactietijd</div></div>
+  <div class="stat-item reveal" style="transition-delay:.2s"><span class="stat-num">100%</span><div class="stat-label">Via WhatsApp</div></div>
+  <div class="stat-item reveal" style="transition-delay:.3s"><span class="stat-num">24/7</span><div class="stat-label">AI altijd beschikbaar</div></div>
+</div>
+
+<!-- HOW IT WORKS -->
+<section id="how" style="position:relative;overflow:hidden;">
+  <!-- parallax blobs -->
+  <div class="parallax-slow" style="position:absolute;width:500px;height:500px;border-radius:50%;background:var(--peach);top:-120px;right:-180px;filter:blur(80px);opacity:0.7;z-index:0;"></div>
+  <div class="parallax-fast" style="position:absolute;width:300px;height:300px;border-radius:50%;background:rgba(244,96,12,0.06);bottom:-80px;left:-80px;filter:blur(60px);z-index:0;"></div>
+  <div class="section-inner" style="position:relative;z-index:1;">
+    <div class="reveal">
+      <div class="section-eyebrow">Hoe het werkt</div>
+      <h2 class="section-title">Zo simpel als een<br><em>WhatsApp sturen.</em></h2>
+      <p class="section-sub">Geen formulieren, geen wachtkamers, geen verborgen kosten.</p>
+    </div>
+    <div class="steps-grid" style="margin-top:64px;">
+      <div class="step-item reveal" style="transition-delay:.0s"><div class="step-dot">01</div><div class="step-item-title">Stuur een bericht</div><div class="step-item-body">Contract, foto of vraag. Voice message mag ook.</div></div>
+      <div class="step-item reveal" style="transition-delay:.1s"><div class="step-dot">02</div><div class="step-item-title">AI scant meteen</div><div class="step-item-body">Directe analyse. Gratis, altijd.</div></div>
+      <div class="step-item reveal" style="transition-delay:.2s"><div class="step-dot">03</div><div class="step-item-title">Kies een professional</div><div class="step-item-body">Rechtenstudent €25 of advocaat €75.</div></div>
+      <div class="step-item reveal" style="transition-delay:.3s"><div class="step-dot">04</div><div class="step-item-title">Betaal in chat</div><div class="step-item-body">Betaallink in WhatsApp. Klaar in 10 seconden.</div></div>
+      <div class="step-item reveal" style="transition-delay:.4s"><div class="step-dot">05</div><div class="step-item-title">Antwoord ontvangen</div><div class="step-item-body">Advies terug via WhatsApp.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing" style="position:relative;overflow:hidden;">
+  <div class="parallax-fast" style="position:absolute;width:400px;height:400px;border-radius:50%;background:var(--peach);top:-100px;left:-120px;filter:blur(80px);opacity:0.6;z-index:0;"></div>
+  <div class="parallax-slow" style="position:absolute;width:350px;height:350px;border-radius:50%;background:rgba(244,96,12,0.07);bottom:-80px;right:-80px;filter:blur(70px);z-index:0;"></div>
+  <div class="section-inner" style="position:relative;z-index:1;">
+    <div class="reveal">
+      <div class="section-eyebrow">Prijzen</div>
+      <h2 class="section-title">Eerlijk geprijsd.<br><em>Geen verrassingen.</em></h2>
+    </div>
+    <div class="pricing-grid">
+      <div class="price-card reveal" style="transition-delay:.0s">
+        <div class="price-name">AI Scan</div>
+        <div class="price-amount">€0</div>
+        <div class="price-period">Altijd gratis</div>
+        <div class="price-divider"></div>
+        <ul class="price-features">
+          <li>✓ Directe AI analyse</li>
+          <li>✓ Juridische risico's in kaart</li>
+          <li>✓ Advies over vervolgstappen</li>
+          <li>✓ Geen account nodig</li>
+        </ul>
+        <a href="https://wa.me/31615712309" class="price-cta">Start gratis →</a>
+      </div>
+      <div class="price-card featured reveal" style="transition-delay:.12s">
+        <div class="price-badge">Meest gekozen</div>
+        <div class="price-name" style="opacity:.85">Rechtenstudent</div>
+        <div class="price-amount">€25</div>
+        <div class="price-period">Eenmalig, per vraag</div>
+        <div class="price-divider"></div>
+        <ul class="price-features">
+          <li>✓ Antwoord binnen 2 uur</li>
+          <li>✓ Derdejaars rechtenstudent</li>
+          <li>✓ Volledig via WhatsApp</li>
+          <li>✓ Betaallink in chat</li>
+        </ul>
+        <a href="https://wa.me/31615712309?text=Ik%20wil%20graag%20een%20rechtenstudent" class="price-cta">Kies rechtenstudent →</a>
+      </div>
+      <div class="price-card reveal" style="transition-delay:.24s">
+        <div class="price-name">Advocaat</div>
+        <div class="price-amount">€75</div>
+        <div class="price-period">Eenmalig, per zaak</div>
+        <div class="price-divider"></div>
+        <ul class="price-features">
+          <li>✓ Antwoord binnen 4 uur</li>
+          <li>✓ Gecertificeerd advocaat</li>
+          <li>✓ Formeel schriftelijk advies</li>
+          <li>✓ Vervolgvragen inbegrepen</li>
+        </ul>
+        <a href="https://wa.me/31615712309?text=Ik%20wil%20graag%20een%20advocaat" class="price-cta">Kies advocaat →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section id="testimonials" style="position:relative;overflow:hidden;">
+  <div class="parallax-slow" style="position:absolute;width:600px;height:600px;border-radius:50%;background:var(--peach);top:-200px;right:-200px;filter:blur(100px);opacity:0.5;z-index:0;"></div>
+  <div class="section-inner" style="position:relative;z-index:1;">
+    <div class="reveal">
+      <div class="section-eyebrow">Ervaringen</div>
+      <h2 class="section-title">Wat mensen <em>zeggen.</em></h2>
+    </div>
+    <div class="testimonials-grid">
+      <div class="testi-card reveal">
+        <div class="testi-quote">"Mijn verhuurder wilde €800 van mijn borg inhouden voor 'normale slijtage'. Na een check via Pretty Lawsome wist ik dat dit illegaal was. Borg volledig teruggekregen."</div>
+        <div class="testi-author"><div class="testi-avatar">🏠</div><div><div class="testi-name">Sofie, 28</div><div class="testi-meta">Amsterdam</div><div class="testi-tag">Huurrecht</div></div></div>
+      </div>
+      <div class="testi-card reveal" style="transition-delay:.1s">
+        <div class="testi-quote">"Ontslagen na 3 jaar. Wist niet wat mijn rechten waren. Voor €75 had ik binnen een middag alles helder. Uiteindelijk €4.000 ontslagvergoeding gekregen."</div>
+        <div class="testi-author"><div class="testi-avatar">💼</div><div><div class="testi-name">Bas, 32</div><div class="testi-meta">Rotterdam</div><div class="testi-tag">Arbeidsrecht</div></div></div>
+      </div>
+      <div class="testi-card reveal" style="transition-delay:.2s">
+        <div class="testi-quote">"Als freelancer teken ik veel contracten. Pretty Lawsome is mijn go-to voor een snelle check. €25 voor gemoedsrust is de beste investering."</div>
+        <div class="testi-author"><div class="testi-avatar">💻</div><div><div class="testi-name">Lina, 26</div><div class="testi-meta">Utrecht</div><div class="testi-tag">Contractrecht</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CAREERS -->
+<section id="careers">
+  <div class="section-inner">
+    <div class="careers-inner">
+      <div class="reveal">
+        <div class="section-eyebrow">Carrière</div>
+        <h2 class="section-title">Werk mee aan een <em>eerlijker rechtssysteem.</em></h2>
+        <p class="section-sub">Ben jij een rechtenstudent of juridisch professional? Sluit je aan bij Pretty Lawsome.</p>
+      </div>
+      <div class="careers-card reveal" style="transition-delay:.15s">
+        <p>Wil je samenwerken met Pretty Lawsome? We horen graag van je — stuur een mailtje en we nemen contact op.</p>
+        <a href="mailto:info@prettylawsome.nl">✉️ info@prettylawsome.nl</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA BANNER -->
+<section id="cta-banner">
+  <div class="reveal">
+    <h2 class="cta-headline">Klaar om je eerste<br>vraag te stellen?</h2>
+    <p class="cta-sub">Gratis AI scan. Geen account. Gewoon WhatsApp.</p>
+    <a href="https://wa.me/31615712309?text=Hoi%2C%20ik%20heb%20een%20juridische%20vraag" class="btn-primary" style="font-size:20px;padding:20px 44px;">
+      💬 Start nu via WhatsApp
+    </a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Pretty <span>Lawsome</span></div>
+  <div class="footer-copy">© 2025 Pretty Lawsome · <a href="mailto:info@prettylawsome.nl" style="color:rgba(255,255,255,0.4);text-decoration:none;">info@prettylawsome.nl</a></div>
+</footer>
+
+<script>
+/* ════════════════════════════════════════
+   SCALE ANIMATION STAGE TO FIT VIEWPORT
+════════════════════════════════════════ */
+function scaleStage() {
+  const outer = document.getElementById('anim-stage-outer');
+  const stage = document.getElementById('anim-stage');
+  const w = outer.clientWidth;
+  const scale = w / 1920;
+  stage.style.transform = `scale(${scale})`;
+  outer.style.height = (1080 * scale) + 'px';
+}
+scaleStage();
+window.addEventListener('resize', scaleStage);
+
+/* ════════════════════════════════════════
+   GSAP ANIMATION TIMELINE (15 seconds)
+════════════════════════════════════════ */
+const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+
+// Blobs
+tl.to(['#blob-a','#blob-b'], { opacity: 1, duration: 1.5 }, 0)
+
+// ── Scene 1: Intro ──
+  .to('#s1',      { opacity: 1, duration: 0.01 }, 0)
+  .to('#s1-eye',  { opacity: 1, y: 0, duration: 0.6 }, 0.2)
+  .to('#s1-h',    { opacity: 1, y: 0, duration: 0.7 }, 0.45)
+  .to('#s1-sub',  { opacity: 1, y: 0, duration: 0.6 }, 0.85)
+  .to('#s1',      { opacity: 0, duration: 0.5 }, 2.6)
+
+// ── Scene 2: Stap 1 ──
+  .to('#s2',      { opacity: 1, duration: 0.01 }, 3.0)
+  .to('#s2-num',  { opacity: 1, duration: 0.5 }, 3.1)
+  .to('#s2-card', { opacity: 1, y: 0, duration: 0.6 }, 3.2)
+  .to('#b1',      { opacity: 1, x: 0, duration: 0.4 }, 3.9)
+  .to('#b2',      { opacity: 1, x: 0, duration: 0.4 }, 4.35)
+  .to('#b3',      { opacity: 1, x: 0, duration: 0.4 }, 4.8)
+  .to('#s2',      { opacity: 0, duration: 0.5 }, 5.7)
+
+// ── Scene 3: Stap 2 ──
+  .to('#s3',        { opacity: 1, duration: 0.01 }, 6.0)
+  .to('#s3-num',    { opacity: 1, duration: 0.5 }, 6.1)
+  .to('#s3-card',   { opacity: 1, y: 0, duration: 0.6 }, 6.2)
+  .to('#scan-line', { top: '100%', duration: 2.2, ease: 'none' }, 6.6)
+  .to('#risk1',     { opacity: 1, duration: 0.3 }, 7.5)
+  .to('#s3',        { opacity: 0, duration: 0.5 }, 8.7)
+
+// ── Scene 4: Stap 3 ──
+  .to('#s4',      { opacity: 1, duration: 0.01 }, 9.0)
+  .to('#s4-num',  { opacity: 1, duration: 0.5 }, 9.1)
+  .to('#s4-card', { opacity: 1, y: 0, duration: 0.6 }, 9.2)
+  .to('#p1',      { opacity: 1, y: 0, duration: 0.4 }, 9.9)
+  .to('#p2',      { opacity: 1, y: 0, duration: 0.4 }, 10.2)
+  .to('#p3',      { opacity: 1, y: 0, duration: 0.4 }, 10.5)
+  .to('#s4',      { opacity: 0, duration: 0.5 }, 11.7)
+
+// ── Scene 5: Outro overview ──
+  .to('#s5',          { opacity: 1, duration: 0.01 }, 12.0)
+  .to('#out-eyebrow', { opacity: 1, y: 0, duration: 0.5 }, 12.1)
+  .to('#os1', { opacity: 1, y: 0, duration: 0.55, ease: 'back.out(1.4)' }, 12.5)
+  .to('#os2', { opacity: 1, y: 0, duration: 0.55, ease: 'back.out(1.4)' }, 12.8)
+  .to('#os3', { opacity: 1, y: 0, duration: 0.55, ease: 'back.out(1.4)' }, 13.1)
+  .to('#out-cta', { opacity: 1, y: 0, duration: 0.5 }, 13.6)
+  .call(() => {
+    gsap.to('#os1', { y: -10, duration: 2.2, ease: 'sine.inOut', repeat: -1, yoyo: true });
+    gsap.to('#os2', { y: -10, duration: 2.2, ease: 'sine.inOut', repeat: -1, yoyo: true, delay: 0.35 });
+    gsap.to('#os3', { y: -10, duration: 2.2, ease: 'sine.inOut', repeat: -1, yoyo: true, delay: 0.7 });
+  }, [], 13.8)
+
+// Show replay button
+  .call(() => {
+    document.getElementById('replay-btn').style.display = 'block';
+  }, [], 14.5);
+
+// Replay
+document.getElementById('replay-btn').addEventListener('click', () => {
+  document.getElementById('replay-btn').style.display = 'none';
+  // Reset all animated elements
+  gsap.set(['#s1','#s2','#s3','#s4','#s5'], { opacity: 0 });
+  gsap.set(['#s1-eye','#s1-h','#s1-sub'], { opacity: 0, y: 20 });
+  gsap.set(['#s2-num','#s3-num','#s4-num'], { opacity: 0 });
+  gsap.set(['#s2-card','#s3-card','#s4-card'], { opacity: 0, y: 60 });
+  gsap.set(['#b1','#b2','#b3'], { opacity: 0 });
+  gsap.set('#b1', { x: -30 }); gsap.set('#b2', { x: 30 }); gsap.set('#b3', { x: -30 });
+  gsap.set('#scan-line', { top: 0 });
+  gsap.set('#risk1', { opacity: 0 });
+  gsap.set(['#p1','#p2','#p3'], { opacity: 0, y: 20 });
+  // Outro reset
+  gsap.killTweensOf(['#os1','#os2','#os3']);
+  gsap.set('#out-eyebrow', { opacity: 0, y: 16 });
+  gsap.set(['#os1','#os2','#os3'], { opacity: 0, y: 50 });
+  gsap.set('#out-cta', { opacity: 0, y: 16 });
+  gsap.set(['#blob-a','#blob-b'], { opacity: 0 });
+  tl.restart();
+});
+
+/* ════════════════════════════════════════
+   PARALLAX SCROLL
+════════════════════════════════════════ */
+const slowEls = document.querySelectorAll('.parallax-slow');
+const fastEls = document.querySelectorAll('.parallax-fast');
+
+function onScroll() {
+  const y = window.scrollY;
+  // Slow elements move at 0.25x scroll speed (float backwards = depth)
+  slowEls.forEach(el => {
+    el.style.transform = `translateY(${y * 0.25}px)`;
+  });
+  // Fast elements move at 0.5x (closer to viewer)
+  fastEls.forEach(el => {
+    el.style.transform = `translateY(${y * -0.12}px)`;
+  });
+}
+
+window.addEventListener('scroll', onScroll, { passive: true });
+
+/* ════════════════════════════════════════
+   SCROLL REVEAL
+════════════════════════════════════════ */
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      revealObserver.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.12 });
+
+document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+</script>
+</body>
+</html>
